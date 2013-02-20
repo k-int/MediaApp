@@ -37,7 +37,7 @@ function SearchView(args) {
     
     
     searchField.addEventListener('return', function(event) {
-    var url = "http://mediatest.k-int.com/elasticSearch/media/_search?q=" + event.value + "&from=0&size=100";
+    var url = "http://mediatest.k-int.com/elasticSearch/media/_search?q=" + event.value + "&from=0&size=1000";
 	getSearch(url);
 	var sf = searchField
     sf.blur();
@@ -217,11 +217,15 @@ function displaySelected(title, description, image, ID){
     
     });
     buy.addEventListener('click',function(e){
-    	// alert(image);
+    	if (Ti.App.Properties.getString('username') != null){
+    		// alert(image);
     	 saveImage(ID);
     	// alert(ID);
     	//buyImage(ID);
+    	}else{
+    	alert('Please setup an account from the Settings tab, Thank you.');
     	
+    	}
     	});
     head.add(buy);
     
@@ -267,23 +271,26 @@ function displaySelected(title, description, image, ID){
 		//.open();
 	
 		imageView.addEventListener('click',function(e){
-			var win3 = Ti.UI.createWindow({
-		backgroundColor:'white',
-		layout : 'vertical'
-		});
-	
+			// var win3 = Ti.UI.createWindow({
+		// backgroundColor:'white',
+		// layout : 'vertical'
+		// });
+// 	
+// 			
+			// var img = Ti.UI.createImageView({
+			// image:image,
+			// height: Titanium.Platform.displayCaps.platformWidth,
+			// width:Titanium.Platform.displayCaps.platformHeight,
+			// top:10,
+// 		
+		// });
+// 
+		 // win3.add(img);
+		// self.containingTab.open(win3);
+			// //img.open();
 			
-			var img = Ti.UI.createImageView({
-			image:image,
-			height: Titanium.Platform.displayCaps.platformWidth,
-			width:Titanium.Platform.displayCaps.platformHeight,
-			top:10,
+			getWatermarked(ID);
 		
-		});
-
-		 win3.add(img);
-		self.containingTab.open(win3);
-			//img.open();
 		
 		});
 		zoom.addEventListener('click',function(e){
@@ -298,30 +305,205 @@ function saveImage(b){
 		var userName = Ti.App.Properties.getString('username');
 		var email = Ti.App.Properties.getString('email');
 		var encKey = Ti.App.Properties.getString('key');
+		var toolActInd = Titanium.UI.createActivityIndicator();
+		toolActInd.style = Titanium.UI.iPhone.ActivityIndicatorStyle.PLAIN;
+		toolActInd.font = {fontFamily:'Helvetica Neue', fontSize:15,fontWeight:'bold'};
+		toolActInd.color = 'white';
+		toolActInd.message = 'Loading...';
+		
+		self.setToolbar([toolActInd],{animated:true});
+		toolActInd.show();
 
-    	var a = "http://mediatest.k-int.com/SecurityGlass/create/save?userName="+userName+"&encryptionKey="+encKey+"&email="+email+"&recordId="+b;
+	
+    	var a = "http://mediatest.k-int.com/SecurityGlass/create/createLargeSecured?userName="+userName+"&encryptionKey="+encKey+"&email="+email+"&recordId="+b;
     	var xhr = Titanium.Network.createHTTPClient();
 	xhr.onload = function()
 	{
 		//this.responseHeader
 		Ti.API.info("Save Image data: " + this.responseText );
 
-			
+		var osname = Ti.Platform.osname;	
 
+		if(osname === 'android'){
+		
+
+if(Ti.Filesystem.isExternalStoragePresent){
+	var f = Ti.Filesystem.getFile(Ti.Filesystem.externalStorageDirectory, b+'.jpg');
+	Ti.Media.Android.scanMediaFiles([f.nativePath], null, function(e){});
+f.write(this.responseData);
+ 
+if(f.exists){
+	actInd.hide();
+	alert("image saved to gallery");
+	Ti.Media.Android.scanMediaFiles([f.nativePath], null, function(e){});
+	
+}else{
+	alert("an error accured saving the image");
+}
+}else{
+var f = Ti.Filesystem.getFile(Ti.Filesystem.applicationDataDirectory, b+'.jpg');
+Ti.Media.Android.scanMediaFiles([f.nativePath], null, function(e){});
+f.write(this.responseData);
+ 
+if(f.exists){
+	alert("image saved to gallery");
+	Ti.Media.Android.scanMediaFiles([f.nativePath], null, function(e){});
+	
+}else{
+	alert("an error accured saving the image");
+}
+}
+
+
+		}else{
 		Ti.API.info(" status: "+ this.status);
 		Titanium.Media.saveToPhotoGallery(this.responseData);
-		Titanium.UI.createAlertDialog({title:'Photo Gallery',message:'Photo saved to gallery'}).show();		
+		toolActInd.hide();
+		self.setToolbar(null,{animated:true});
+		Titanium.UI.createAlertDialog({title:'Photo Gallery',message:'Photo saved to gallery'}).show();	
+		}	
 	};
+	xhr.onerror = function(e){
+		toolActInd.hide();
+		self.setToolbar(null,{animated:true});
+		Ti.API.error(xhr.responseText + "error" +e.value);
+	}
 	// open the client
 	xhr.open('GET',a);
 	
 	// send the data
 	xhr.send();
-	
-	
     	
     }  
 
+	function getWatermarked(b){
+	var userName = Ti.App.Properties.getString('username');
+		var email = Ti.App.Properties.getString('email');
+		var encKey = Ti.App.Properties.getString('key');
+		
+		var toolActInd = Titanium.UI.createActivityIndicator();
+		toolActInd.style = Titanium.UI.iPhone.ActivityIndicatorStyle.PLAIN;
+		toolActInd.font = {fontFamily:'Helvetica Neue', fontSize:15,fontWeight:'bold'};
+		toolActInd.color = 'white';
+		toolActInd.message = 'Loading...';
+		
+		self.setToolbar([toolActInd],{animated:true});
+		toolActInd.show();
+
+    	var a = "http://mediatest.k-int.com/SecurityGlass/create/createLargeWatermarked?userName="+userName+"&encryptionKey="+encKey+"&email="+email+"&recordId="+b;
+    	var xhr = Titanium.Network.createHTTPClient();
+    	
+    	var actInd = Titanium.UI.createActivityIndicator({
+		bottom:10, 
+		height:50,
+		width:150
+	});
+    	
+ 
+ 	
+			actInd.message = 'Loading...';
+			var osname = Ti.Platform.osname;	
+		if(osname === 'android'){
+			actInd.show();
+		}
+		else{
+			
+		}
+    
+	xhr.onload = function()
+	{
+		//this.responseHeader
+		Ti.API.info("Save Image data: " + this.responseText );
+		
+		Ti.API.info(" status: "+ this.status);
+			var win3 = Ti.UI.createWindow({
+		backgroundColor:'white',
+		layout : 'vertical'
+		});
+		
+			var osname = Ti.Platform.osname;	
+		if(osname === 'android'){
+			var img = Ti.UI.createImageView({
+			image:this.responseData,
+			
+		//	height: Titanium.Platform.displayCaps.platformWidth,
+		//	width:Titanium.Platform.displayCaps.platformWidth,
+			top:10,
+			canScale: true,
+			enableZoomControls: true	
+		});
+		
+	actInd.hide();
+		 win3.add(img);
+		self.containingTab.open(win3);
+		}else{
+			var sview = Ti.UI.createScrollView({
+				contentWidth:'auto',
+			contentHeight:'auto',
+			top:0,
+			bottom:0,
+			showVerticalScrollIndicator:true,
+			showHorizontalScrollIndicator:true,
+			maxZoomScale:100,
+			minZoomScale:0.1,
+			zoomScale:1
+			});
+			
+			var img = Ti.UI.createImageView({
+			image:this.responseData,
+			
+			
+		   height: '100%',
+			width: '100%',
+			
+		});
+		toolActInd.hide();
+		self.setToolbar(null,{animated:true});
+		 var head = Ti.UI.createView({
+    //	backgroundColor:'#373232',
+    	top:0,
+    	width : 'auto',
+    	height: 50
+    });
+
+      var buy = Ti.UI.createButton({
+    
+      title: 'Buy Now',
+      top:5,
+    //  right:5,
+  //    style:Titanium.UI.iPhone.SystemButtonStyle.BORDERED
+    
+    });
+    buy.addEventListener('click',function(e){
+    	if (Ti.App.Properties.getString('username') != null){
+    		// alert(image);
+    	 saveImage(ID);
+    	// alert(ID);
+    	//buyImage(ID);
+    	}else{
+    	alert('Please setup an account from the Settings tab, Thank you.');
+    	
+    	}
+    	});
+    head.add(buy);
+    
+    win3.add(head);
+		
+		
+		
+		sview.add(img);
+		 win3.add(sview);
+		self.containingTab.open(win3);
+		}
+	};
+	xhr.onerror = function(e){
+		Ti.API.error(xhr.responseText + "error" +e.value);
+	}
+	xhr.open('GET',a);
+	
+	xhr.send();
+    		
+	}
 
   function hexToBytes(hex) {
                 for (var bytes = [], c = 0; c < hex.length; c += 2)
